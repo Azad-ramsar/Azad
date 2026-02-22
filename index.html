@@ -13,9 +13,9 @@
     <style>
         :root {
             --primary: #64ffda;
-            --bg-page: #020617;     /* رنگ پس‌زمینه کل صفحه (تیره عمیق) */
-            --bg-container: #0f172a; /* رنگ باکس اصلی فیلترها */
-            --bg-result-card: #1e293b; /* رنگ متفاوت برای کارت‌های نتیجه (تضاد روشن‌تر) */
+            --bg-page: #020617;
+            --bg-container: #0f172a;
+            --bg-result-card: #1e293b;
             --input-bg: #1e293b;
             --text-white: #f8fafc;
             --accent-red: #fb7185;
@@ -62,7 +62,7 @@
             .filter-section { grid-template-columns: 1fr 1fr; }
         }
 
-        /* --- استایل اصلاح شده Select2 برای خوانایی کامل --- */
+        /* استایل اصلاح شده Select2 */
         .select2-container--default .select2-selection--single {
             background-color: var(--input-bg) !important;
             border: 1px solid rgba(100, 255, 218, 0.3) !important;
@@ -104,13 +104,13 @@
         .btn-search { background: var(--primary); color: #020617; box-shadow: 0 4px 14px rgba(100, 255, 218, 0.3); }
         .btn-reset { background: transparent; color: var(--accent-red); border: 1px solid var(--accent-red); }
 
-        /* --- تضاد در بخش نتایج (خروجی) --- */
+        /* نتایج */
         .results-area { margin-top: 10px; }
         
         /* حالت دسکتاپ */
         table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
         tr.result-row td { 
-            background: var(--bg-result-card); /* رنگ متمایز کارت */
+            background: var(--bg-result-card);
             padding: 20px; 
             text-align: center;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -119,37 +119,66 @@
         tr.result-row td:first-child { border-radius: 0 15px 15px 0; }
         tr.result-row td:last-child { border-radius: 15px 0 0 15px; }
 
-        /* حالت موبایل (کارت‌های برجسته) */
+        /* حالت موبایل - اصلاح شده برای رفع هم‌پوشانی */
         @media (max-width: 650px) {
             table, thead, tbody, th, td, tr { display: block; }
             thead tr { position: absolute; top: -9999px; left: -9999px; }
             
             tr.result-row {
-                margin-bottom: 25px;
-                background: var(--bg-result-card); /* تضاد با پس‌زمینه کانتینر */
+                margin-bottom: 20px;
+                background: var(--bg-result-card);
                 border: 1px solid rgba(100, 255, 218, 0.2);
                 border-radius: 20px;
-                padding: 15px;
+                padding: 12px;
                 box-shadow: 0 10px 25px rgba(0,0,0,0.4);
             }
             
             td {
+                display: flex;
+                align-items: center;
                 border: none !important;
-                position: relative;
-                padding-right: 45% !important;
-                text-align: right;
-                padding: 14px 5px !important;
+                padding: 10px 10px !important;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+                text-align: right;
+                min-height: 30px;
             }
+            
             td:last-child { border-bottom: none !important; }
+            
             td:before {
-                position: absolute; right: 10px; width: 40%;
-                color: var(--primary); font-weight: bold;
                 content: attr(data-label);
+                color: var(--primary);
+                font-weight: bold;
+                min-width: 85px;
+                margin-left: 15px;
+                font-size: 0.9rem;
+            }
+            
+            /* استایل خاص برای سلول درس که برجسته‌تر است */
+            td[data-label="درس"] {
+                color: var(--primary);
+                font-weight: bold;
+                font-size: 1.1rem;
+            }
+            
+            /* برای سلول‌هایی که محتوای طولانی دارند */
+            td span {
+                flex: 1;
+                word-break: break-word;
             }
         }
 
         #loading { text-align: center; color: var(--primary); padding: 50px; }
+        
+        /* استایل برای پیام خطا */
+        .error-message {
+            text-align: center;
+            padding: 30px;
+            color: #94a3b8;
+            background: var(--bg-result-card);
+            border-radius: 20px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -205,7 +234,12 @@
             $('#loading').hide();
             $('#filterUI').fadeIn();
         } catch (e) {
-            $('#loading').html("❌ خطا در بارگذاری فایل اکسل.");
+            $('#loading').html(`
+                <div class="error-message">
+                    ❌ خطا در بارگذاری فایل اکسل.<br>
+                    لطفا از وجود فایل schedule.xlsx در مسیر صحیح اطمینان حاصل کنید.
+                </div>
+            `);
         }
     }
 
@@ -215,19 +249,19 @@
         const filtered = fullData.filter(r => (!lesson || r['نام درس'] === lesson) && (!prof || r['نام استاد'] === prof));
 
         if (filtered.length === 0) {
-            $('#resultsArea').html("<p style='text-align:center; padding-top:20px; color:#94a3b8;'>نتیجه‌ای یافت نشد.</p>");
+            $('#resultsArea').html("<div class='error-message'>نتیجه‌ای یافت نشد.</div>");
             return;
         }
 
         let html = `<table><thead><tr><th>ردیف</th><th>درس</th><th>استاد</th><th>روز</th><th>ساعت</th><th>کلاس</th></tr></thead><tbody>`;
         filtered.forEach((r, i) => {
             html += `<tr class="result-row">
-                <td data-label="ردیف">${i + 1}</td>
-                <td data-label="درس" style="color:var(--primary); font-weight:bold;">${r['نام درس'] || '-'}</td>
-                <td data-label="استاد">${r['نام استاد'] || '-'}</td>
-                <td data-label="روز">${r['روز'] || '-'}</td>
-                <td data-label="ساعت">${formatTime(r['زمان شروع'] || r['زمان'])}</td>
-                <td data-label="کلاس">${r['شماره کلاس'] || '-'}</td>
+                <td data-label="ردیف"><span>${i + 1}</span></td>
+                <td data-label="درس"><span>${r['نام درس'] || '-'}</span></td>
+                <td data-label="استاد"><span>${r['نام استاد'] || '-'}</span></td>
+                <td data-label="روز"><span>${r['روز'] || '-'}</span></td>
+                <td data-label="ساعت"><span>${formatTime(r['زمان شروع'] || r['زمان'])}</span></td>
+                <td data-label="کلاس"><span>${r['شماره کلاس'] || '-'}</span></td>
             </tr>`;
         });
         $('#resultsArea').hide().html(html + "</tbody></table>").fadeIn();
